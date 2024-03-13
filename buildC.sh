@@ -1,0 +1,1 @@
+g++ -o client client.c -I/usr/include/postgresql -lpq
