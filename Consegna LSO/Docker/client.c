@@ -4,7 +4,6 @@
 #include <time.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-#include <stdbool.h>
 
 #define PORT 8080
 #define SERVER_IP "127.0.0.1"
@@ -112,14 +111,28 @@ int main() {
                         printf("Login effettuato con successo\n");
                         loginSuccess = 1;
                         int copie_prestate;
+                        bool scaduti;
+                        char question[2048];
 
+                        memset(buffer, 0, sizeof(buffer));
                         sendRequest(clientSocket, "COPIE_PRESTATE");
                         receiveResponse(clientSocket, buffer);
                         copie_prestate = atoi(buffer);
 
+                        memset(buffer, 0, sizeof(buffer));
                         sendRequest(clientSocket, "NUM_BOOKS");
                         receiveResponse(clientSocket, buffer);
                         numBooks = atoi(buffer);
+
+                        memset(buffer, 0, sizeof(buffer));
+                        sprintf(question, "SCADENZE %s", username);
+                        sendRequest(clientSocket, question);
+                        receiveResponse(clientSocket, buffer);
+                        scaduti = atoi(buffer);
+
+                        if(scaduti){
+                            printf("Prego, riconsegnare i libri presi in prestito la cui data di scadenza è stata superata\n\n");
+                        }
 
                         int choice_2 = 0;
                         int choice_3 = 0;
@@ -149,14 +162,18 @@ int main() {
                                         printf("\n4. Torna al menu principale\n");
                                         printf("\nScelta: ");
                                         scanf("%d", &filter);
+                                        memset(question, 0, sizeof(question));
                                         memset(buffer, 0, sizeof(buffer));
 
                                         switch(filter) {
                                             case 0:
+                                                memset(buffer, 0, sizeof(buffer));
                                                 sendRequest(clientSocket, "INVENTORY NONE");
                                                 receiveResponse(clientSocket, buffer);
                                                 break;
                                             case 1:
+                                                memset(buffer, 0, sizeof(buffer));
+                                                memset(question, 0, sizeof(question));
                                                 printf("\nInserisci il titolo: ");
                                                 scanf("%s", filter_type);
                                                 sprintf(question, "INVENTORY TITLE '%s'", filter_type);
@@ -165,6 +182,8 @@ int main() {
                                                 receiveResponse(clientSocket, buffer);
                                                 break;
                                             case 2:
+                                                memset(buffer, 0, sizeof(buffer));
+                                                memset(question, 0, sizeof(question));
                                                 printf("\nInserisci il genere: ");
                                                 scanf("%s", filter_type);
                                                 sprintf(question, "INVENTORY GENDER '%s'", filter_type);
@@ -173,6 +192,8 @@ int main() {
                                                 receiveResponse(clientSocket, buffer);
                                                 break;
                                             case 3:
+                                                memset(buffer, 0, sizeof(buffer));
+                                                memset(question, 0, sizeof(question));
                                                 printf("\nInserisci l'autore: ");
                                                 scanf("%s", filter_type);
                                                 sprintf(question, "INVENTORY AUTHOR '%s'", filter_type);
@@ -187,16 +208,24 @@ int main() {
                                     } while (!exitMenu);
                                     break;
                                 case 2:
+                                    memset(buffer, 0, sizeof(buffer));
+                                    memset(question, 0, sizeof(question));
+                                    sendRequest(clientSocket, "LIBRI_MAX");
+                                    receiveResponse(clientSocket, buffer);
+                                    max_libri_prestati = atoi(buffer);
+
                                     char prestito[200];
-                                    char question[1000];
+                                    char question[2000];
+                                    memset(question, 0, sizeof(question));
                                     if(copie_prestate >= max_libri_prestati){
-                                        printf("\nHai già troppi libri in prestito.");
+                                        printf("\nHai già troppi libri in prestito. %d - %d\n", copie_prestate, max_libri_prestati);
                                     } else {
-                                        printf("\nHai a disposizione %d libri da poter prendere in prestito", (max_libri_prestati - copie_prestate));
+                                        memset(buffer, 0, sizeof(buffer));
+                                        printf("\nHai a disposizione %d libri da poter prendere in prestito\n", (max_libri_prestati - copie_prestate));
                                         do {
                                             printf("Inserisci il nome del libro che vuoi prendere in prestito (0 se hai finito): ");
                                             scanf("\n%s", prestito);
-                                            sprintf(question, "P_CARRELLO %s", prestito);
+                                            sprintf(question, "P_CARRELLO %s%s", username, prestito);
 
                                             sendRequest(clientSocket, question);
                                             receiveResponse(clientSocket, buffer);
@@ -208,11 +237,13 @@ int main() {
                                     }
                                     break;
                                 case 3:
+                                    memset(buffer, 0, sizeof(buffer));
+                                    memset(question, 0, sizeof(question));
                                     char elimina[200];
                                     do {
                                         printf("Inserisci il nome del libro che vuoi eliminare dal carrello (0 se hai finito): ");
                                         scanf("\n%s", elimina);
-                                        sprintf(question, "M_CARRELLO %s", elimina);
+                                        sprintf(question, "M_CARRELLO %s%s", username, elimina);
 
                                         sendRequest(clientSocket, question);
                                         receiveResponse(clientSocket, buffer);
@@ -223,20 +254,27 @@ int main() {
                                     } while(strncmp(elimina, "0", 1) == 0);
                                     break;
                                 case 4:
-                                    sendRequest(clientSocket, "VEDI_CARRELLO");
+                                    memset(buffer, 0, sizeof(buffer));
+                                    memset(question, 0, sizeof(question));
+                                    sprintf(question, "VEDI_CARRELLO %s", username);
+                                    sendRequest(clientSocket, question);
                                     receiveResponse(clientSocket, buffer);
                                     break;
                                 case 5:
-                                    sendRequest(clientSocket, "CHECKOUT");
+                                    memset(buffer, 0, sizeof(buffer));
+                                    memset(question, 0, sizeof(question));
+                                    sprintf(question, "CHECKOUT %s", username);
+                                    sendRequest(clientSocket, question);
                                     receiveResponse(clientSocket, buffer);
 
-                                    memset(buffer, 0, sizeof(buffer));
+                                    // memset(buffer, 0, sizeof(buffer));
                                     break;
                                 case 6:
-                                    break;
+                                    return 0;
                             }
                         } while(1);
                     } else if(strncmp(buffer, "LOGIN_OP_OK", 11) == 0) {
+                        memset(buffer, 0, sizeof(buffer));
                         printf("Login effettuato con successo\n");
                         loginSuccess = 1;
                         int copie_prestate;
@@ -245,6 +283,7 @@ int main() {
                         receiveResponse(clientSocket, buffer);
                         copie_prestate = atoi(buffer);
 
+                        memset(buffer, 0, sizeof(buffer));
                         sendRequest(clientSocket, "NUM_BOOKS");
                         receiveResponse(clientSocket, buffer);
                         numBooks = atoi(buffer);
@@ -264,6 +303,7 @@ int main() {
 
                             switch(choice_2) {
                                 case 1:
+                                    memset(buffer, 0, sizeof(buffer));
                                     printf("Inserisci il titolo del libro: ");
                                     scanf(" %[^\n]s", title);
                                     printf("Inserisci l'autore del libro: ");
@@ -290,6 +330,7 @@ int main() {
                                     numBooks++;
                                     break;
                                 case 2:
+                                    memset(buffer, 0, sizeof(buffer));
                                     do {
                                         printf("\nSeleziona filtro: ");
                                         int filter = 0;
@@ -306,10 +347,12 @@ int main() {
 
                                         switch(filter) {
                                             case 0:
+                                                memset(buffer, 0, sizeof(buffer));
                                                 sendRequest(clientSocket, "INVENTORY NONE");
                                                 receiveResponse(clientSocket, buffer);
                                                 break;
                                             case 1:
+                                                memset(buffer, 0, sizeof(buffer));
                                                 printf("\nInserisci il titolo: ");
                                                 scanf("%s", filter_type);
                                                 sprintf(question, "INVENTORY TITLE '%s'", filter_type);
@@ -318,6 +361,7 @@ int main() {
                                                 receiveResponse(clientSocket, buffer);
                                                 break;
                                             case 2:
+                                                memset(buffer, 0, sizeof(buffer));
                                                 printf("\nInserisci il genere: ");
                                                 scanf("%s", filter_type);
                                                 sprintf(question, "INVENTORY GENDER '%s'", filter_type);
@@ -326,6 +370,7 @@ int main() {
                                                 receiveResponse(clientSocket, buffer);
                                                 break;
                                             case 3:
+                                                memset(buffer, 0, sizeof(buffer));
                                                 printf("\nInserisci l'autore: ");
                                                 scanf("%s", filter_type);
                                                 sprintf(question, "INVENTORY AUTHOR '%s'", filter_type);
@@ -340,6 +385,7 @@ int main() {
                                     } while (!exitMenu);
                                     break;
                                 case 3:
+                                    memset(buffer, 0, sizeof(buffer));
                                     int prestiti;
                                     char question[1024];
                                     printf("Inserisci il numero massimo di libri da poter prendere in prestito (ora sono %d): ", max_libri_prestati);
@@ -351,6 +397,7 @@ int main() {
                                     receiveResponse(clientSocket, buffer);
                                     break;
                                 case 4:
+                                    memset(buffer, 0, sizeof(buffer));
                                     sendRequest(clientSocket, "VEDI_PRESTITI");
                                     receiveResponse(clientSocket, buffer);
                                     break;
@@ -359,6 +406,7 @@ int main() {
                             }
                         } while(1);
                     } else if (strncmp(buffer, "LOGIN_FAIL", 10) == 0) {
+                        memset(buffer, 0, sizeof(buffer));
                         printf("\nLogin non effettuato correttamente. Riprova.\n");
                     } else {
                         printf("Errore durante il login.\n");
@@ -368,13 +416,14 @@ int main() {
                 break;
             }
             case 2:
-                    printf("\nInserisci il tuo username: ");
-                    scanf("%s", username);
-                    printf("Inserisci la tua password: ");
-                    scanf("%s", password);
+                memset(buffer, 0, sizeof(buffer));
+                printf("\nInserisci il tuo username: ");
+                scanf("%s", username);
+                printf("Inserisci la tua password: ");
+                scanf("%s", password);
 
-                    sendLoginRegisterRequest(clientSocket, username, password, "REGISTER");
-                    receiveResponse(clientSocket, buffer);
+                sendLoginRegisterRequest(clientSocket, username, password, "REGISTER");
+                receiveResponse(clientSocket, buffer);
                 break;
             case 3:
                 printf("\033[1;36mArrivederci!\033[0m\n");

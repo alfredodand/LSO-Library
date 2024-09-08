@@ -59,7 +59,7 @@ services:
       POSTGRES_PASSWORD: 0000
       POSTGRES_DB: libreria
     ports:
-      - "5432:5432"
+      - "5433:5432"
     # command: ['postgres', '-p', '5432']
     networks:
       - backend
