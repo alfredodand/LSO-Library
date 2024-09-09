@@ -54,8 +54,8 @@ int numUsers = 0;
 
 int valread;
 
-int client_sockets[MAX_USERS] = {0};  // Inizializza tutti i socket a 0
-char client_usernames[MAX_USERS][50];  // Nomi utenti associati ai client
+int client_sockets[MAX_USERS] = {0}; 
+char client_usernames[MAX_USERS][50];
 
 void *handle_client(void *arg);
 
@@ -64,16 +64,16 @@ int add_client(int client_socket, const char *username) {
         if (client_sockets[i] == 0) {  // Trova un socket vuoto
             client_sockets[i] = client_socket;
             strncpy(client_usernames[i], username, 50);
-            return i;  // Ritorna l'indice dove il client è stato aggiunto
+            return i;
         }
     }
-    return -1;  // Nessun posto disponibile
+    return -1;
 }
 
 void remove_client(int client_socket) {
     for (int i = 0; i < MAX_USERS; i++) {
         if (client_sockets[i] == client_socket) {
-            client_sockets[i] = 0;  // Rimuovi il socket dalla lista
+            client_sockets[i] = 0;
             memset(client_usernames[i], 0, sizeof(client_usernames[i]));
             return;
         }
@@ -85,7 +85,6 @@ char* printDate() {
     struct tm *tm_info = localtime(&t);
     char *date = (char*)malloc(26);  // 26 characters for the formatted date
     if (date == NULL) {
-        // Handle memory allocation failure
         perror("Memory allocation failed");
         exit(EXIT_FAILURE);
     }
@@ -99,7 +98,6 @@ char* printDatePlus() {
     struct tm *tm_info = localtime(&t);
     char *date = (char*)malloc(26);  // 26 characters for the formatted date
     if (date == NULL) {
-        // Handle memory allocation failure
         perror("Memory allocation failed");
         exit(EXIT_FAILURE);
     }
@@ -121,24 +119,19 @@ int queryInsert(PGconn *conn, char query[2048]) {
 }
 
 int querySelectInt(PGconn *conn, char query[2048]) {
-    // Esegui la query
     PGresult *result = PQexec(conn, query);
-
-    // Controlla se l'esecuzione della query è avvenuta con successo
     if (PQresultStatus(result) != PGRES_TUPLES_OK) {
         fprintf(stderr, "Errore nell'esecuzione della query: %s", PQerrorMessage(conn));
         PQclear(result);
         exit(EXIT_FAILURE);
     }
 
-    // Verifica se ci sono risultati
     if (PQntuples(result) == 0) {
         fprintf(stderr, "Nessun risultato trovato per la query: %s", query);
         PQclear(result);
         return 0;
     }
 
-    // Recupera e ritorna il risultato
     int resultValue = atoi(PQgetvalue(result, 0, 0));
     return resultValue;
 }
@@ -157,17 +150,14 @@ int queryDelete(PGconn *conn, const char *query) {
 }
 
 char* querySelectUsers(PGconn *conn, char query[2048]) {
-    // Esegui la query
     PGresult *result = PQexec(conn, query);
 
-    // Controlla se l'esecuzione della query è avvenuta con successo
     if (PQresultStatus(result) != PGRES_TUPLES_OK) {
         fprintf(stderr, "Errore nell'esecuzione della query: %s", PQerrorMessage(conn));
         PQclear(result);
         return 0;
     }
 
-    // Recupera e stampa i risultati
     int numRows = PQntuples(result);
     char response[4096];
     memset(response, 0, sizeof(response));
@@ -175,44 +165,15 @@ char* querySelectUsers(PGconn *conn, char query[2048]) {
     return response;
 }
 
-void sendMessageToUsers(PGconn *conn, int id_libro) {
-    char query[2048];
-    sprintf(query, "SELECT COUNT(nome_utente) FROM carrello WHERE id_libro = '%d'", id_libro);
-    int utenti_segnalati = querySelectInt(conn, query);
-
-    char message[100] = "Ultima copia del libro appena stata comprata da un altro utente";
-
-
-    for (int i = 0; i < utenti_segnalati; i++) {
-        char query_2[2048];
-        sprintf(query_2, "SELECT nome_utente FROM carrello WHERE id_libro = '%d' LIMIT 1", id_libro);
-        char *utente = querySelectUsers(conn, query_2);
-
-        char query_3[2048];
-        sprintf(query_3, "DELETE FROM carrello WHERE id_libro = '%d' AND nome_utente = '%s'", id_libro, utente);
-        queryDelete(conn, query_3);
-
-        if (strcmp(clients[i].username, utente) == 0) {
-            send(clients[i].socket, message, strlen(message), 0);
-            // printf("Messaggio inviato a %s\n", username);
-            // return;
-        }
-    }
-    // printf("Utente %s non trovato.\n", username);
-}
-
 int querySelectBooks(PGconn *conn, char query[2048], int newSocket) {
-    // Esegui la query
     PGresult *result = PQexec(conn, query);
 
-    // Controlla se l'esecuzione della query è avvenuta con successo
     if (PQresultStatus(result) != PGRES_TUPLES_OK) {
         fprintf(stderr, "Errore nell'esecuzione della query: %s", PQerrorMessage(conn));
         PQclear(result);
         return 0;
     }
 
-    // Recupera e stampa i risultati
     int numRows = PQntuples(result);
     char response[4096];
     memset(response, 0, sizeof(response));
@@ -220,88 +181,51 @@ int querySelectBooks(PGconn *conn, char query[2048], int newSocket) {
     printf("Magazzino della libreria:\n\n");
 
     for (int i = 0; i < numRows; i++) {
-        // printf("Titolo: %s ", PQgetvalue(result, i, 0));
-        // printf("Autore: %s ", PQgetvalue(result, i, 1));
-        // printf("Genere: %s ", PQgetvalue(result, i, 2));
-        // printf("Quantità: %s", PQgetvalue(result, i, 3));
-
-        // sprintf(titolo, "Titolo: %s ", PQgetvalue(result, i, 0));
-        // sprintf(autore, "Autore: %s ", PQgetvalue(result, i, 1));
-        // sprintf(genere, "Genere: %s ", PQgetvalue(result, i, 2));
-        // sprintf(quantità, "Quantità: %s", PQgetvalue(result, i, 3));    
-
-        // Accoda il titolo
+ 
         strcat(response, "\nTitolo: ");
         strcat(response, PQgetvalue(result, i, 0));
         strcat(response, " ");
 
-        // Accoda l'autore
         strcat(response, "\nAutore: ");
         strcat(response, PQgetvalue(result, i, 1));
         strcat(response, " ");
 
-        // Accoda il genere
         strcat(response, "\nGenere: ");
         strcat(response, PQgetvalue(result, i, 2));
         strcat(response, " ");
 
-        // Accoda la quantità
         strcat(response, "\nQuantità: ");
         strcat(response, PQgetvalue(result, i, 3));    
 
-        // Aggiungi una nuova riga tra i risultati
         if (i < numBooks) {
             strcat(response, "\n");
         }
     }
-    // sprintf(response, "%s %s %s %s", titolo, autore, genere, quantità);
 
     send(newSocket, response, strlen(response), 0);
 
-    //int resultValue = atoi(PQgetvalue(result, 0, 0));
     return 1;
 }
 
 int querySelectCarrello(PGconn *conn, char query[2048], int newSocket) {
-    // Esegui la query
     PGresult *result = PQexec(conn, query);
 
-    // Controlla se l'esecuzione della query è avvenuta con successo
     if (PQresultStatus(result) != PGRES_TUPLES_OK) {
         fprintf(stderr, "Errore nell'esecuzione della query: %s", PQerrorMessage(conn));
         PQclear(result);
         return 0;
     }
 
-    // Recupera e stampa i risultati
     int numRows = PQntuples(result);
     char response[4096];
     memset(response, 0, sizeof(response));
 
 
     for (int i = 0; i < numRows; i++) {
-        // Accoda il titolo
         strcat(response, "\nLibro");
         strcat(response, PQgetvalue(result, i, 0));
         strcat(response, " ");
 
-        // int resultValue = atoi(PQgetvalue(result, 0, 0));
-
-        // char query_2[2048];
-        // sprintf(query_2, "SELECT titolo FROM libro WHERE id_libro = %d", resultValue);
-
-        // PGresult *result2 = PQexec(conn, query_2);
-
-        // // Controlla se l'esecuzione della query è avvenuta con successo
-        // if (PQresultStatus(result2) != PGRES_TUPLES_OK) {
-        //     fprintf(stderr, "Errore nell'esecuzione della query: %s", PQerrorMessage(conn));
-        //     PQclear(result2);
-        //     return 0;
-        // }
-
-        // strcat(response, PQgetvalue(result2, i, 0));
-
-        // Aggiungi una nuova riga tra i risultati
         if (i < numBooks) {
             strcat(response, "\n");
         }
@@ -312,17 +236,14 @@ int querySelectCarrello(PGconn *conn, char query[2048], int newSocket) {
 }
 
 int querySelectPrestiti(PGconn *conn, char query[2048], int newSocket) {
-    // Esegui la query
     PGresult *result = PQexec(conn, query);
 
-    // Controlla se l'esecuzione della query è avvenuta con successo
     if (PQresultStatus(result) != PGRES_TUPLES_OK) {
         fprintf(stderr, "Errore nell'esecuzione della query: %s", PQerrorMessage(conn));
         PQclear(result);
         return 0;
     }
 
-    // Recupera e stampa i risultati
     int numRows = PQntuples(result);
     char response[4096];
     memset(response, 0, sizeof(response));
@@ -359,19 +280,15 @@ int querySelectPrestiti(PGconn *conn, char query[2048], int newSocket) {
     return 1;
 }
 
-// Funzione di controllo credenziali
 int login(PGconn *conn, char* username, char* password) {
-    // Verifica la lunghezza dei parametri
     if (strlen(username) >= MAX_USERNAME_LENGTH || strlen(password) >= MAX_PASSWORD_LENGTH) {
         fprintf(stderr, "Errore: lunghezza username o password supera il massimo consentito\n");
         return 0;
     }
 
-    // Prepara la query SQL, utilizzando i placeholder per prevenire SQL injection
     char query[2048];
     snprintf(query, sizeof(query), "SELECT COUNT(*) FROM utente WHERE username = '%s' AND password = '%s'", username, password);
     
-    // Esegue la query
     PGresult *res = PQexec(conn, query);
 
     if (PQresultStatus(res) != PGRES_TUPLES_OK) {
@@ -476,8 +393,6 @@ int displayPrestiti(PGconn *conn, int newSocket) {
     return 0;
 }
 
-
-
 int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
     int flag = 0;
     int indice;
@@ -485,7 +400,6 @@ int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
     int copie;
     if (strncmp(request, "LOGIN", 5) == 0) {    
 
-        // Estrai username e password dalla richiesta
         sscanf(request, "LOGIN %s %s", username, password);
 
         if(login(conn, username, password)){
@@ -498,14 +412,12 @@ int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
             flag = 1;
         } else {
             strcpy(response, "LOGIN_FAIL");
-            // flag = 0;
         }
         memset(request, 0, sizeof(request));
     } else if(strncmp(request, "REGISTER", 8) == 0){
         char username[50];
         char password[50];
 
-        // Estrai username e password dalla richiesta
         sscanf(request, "REGISTER %s %s", username, password);
 
         if(registerUser(conn, username, password)){
@@ -513,7 +425,6 @@ int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
             flag = 1;
         } else {
             strcpy(response, "REGISTER_FAIL");
-            // flag = 0;
         }
         memset(request, 0, sizeof(request));
     } else if(strncmp(request, "ADD_BOOK", 8) == 0) {
@@ -522,7 +433,6 @@ int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
         int quantity;
         char gender[50];
 
-        // Estrai username e password dalla richiesta
         sscanf(request, "ADD_BOOK %s %s %d %s", title, author, &quantity, gender);
 
         if(addBook(conn, title, author, quantity, gender)){
@@ -530,7 +440,6 @@ int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
             flag = 1;
         } else {
             strcpy(response, "ADD_BOOK_FAIL");
-            // flag = 0;
         }
         memset(request, 0, sizeof(request));
     } else if(strncmp(request, "INVENTORY", 9) == 0) {
@@ -538,7 +447,6 @@ int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
         char filter_type[50];
         memset(response, 0, sizeof(response));
 
-        // Estrai username e password dalla richiesta
         sscanf(request, "INVENTORY %s %s", filter, filter_type);
 
         if(displayInventory(conn, filter, filter_type, newSocket)){
@@ -546,7 +454,6 @@ int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
             flag = 0;
         } else {
             strcpy(response, "\nINVENTORY_FAIL");
-            // flag = 0;
         }
         memset(request, 0, sizeof(request));
     } else if(strncmp(request, "NUM_BOOKS", 9) == 0) {
@@ -623,20 +530,8 @@ int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
                     sprintf(query, "INSERT INTO prestiti (id_libro, nome_utente, data_prestito, data_restituzione) VALUES (%d, '%s', '%s', '%s');", id_libro, username_local, printDate(), printDatePlus());
                     
                     if(queryInsert(conn, query)) {
-                        // copie_in_prestito++;
-                        // char query_4[2048];
-                        // sprintf(query_4, "UPDATE libro SET copie_disponibili = %d, copie_in_prestito = %d WHERE id_libro = '%d';", (copie = (copie > 0) ? (copie - 1) : copie), copie_in_prestito+1, id_libro);
-                        // queryInsert(conn, query_4);
-
-                        char query_5[2048];
-                        sprintf(query_5, "SELECT copie_disponibili FROM libro WHERE id_libro = '%d';", id_libro);
-                        int copie_disponibili = querySelectInt(conn, query_5);
-                        if(copie_disponibili == 0) {
-                            sendMessageToUsers(conn, id_libro);
-                        }
                         strcpy(response, "CHECKOUT_OK");
                         libri_carrello--;
-                        break;
                     } else {
                         strcpy(response, "CHECKOUT_FAIL");
                     }
@@ -704,7 +599,6 @@ int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
             flag = 0;
         } else {
             strcpy(response, "\nVEDI_CARRELLO_FAIL");
-            // flag = 0;
         }
         memset(request, 0, sizeof(request));
     } else if(strncmp(request, "VEDI_PRESTITI", 13) == 0) {
@@ -715,7 +609,6 @@ int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
             flag = 0;
         } else {
             strcpy(response, "\nVEDI_PRESTITI_FAIL");
-            // flag = 0;
         }
         memset(request, 0, sizeof(request));
     } else if(strncmp(request, "MAX_PRESTITI", 12) == 0) {
@@ -726,12 +619,6 @@ int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
         max_libri_prestati = atoi(prestiti);
         strcpy(response, "\nMAX_PRESTITI_OK");
         flag = 0;
-        memset(request, 0, sizeof(request));
-    } else if(strncmp(request, "LIBRI_MAX", 9)) {
-        memset(response, 0, sizeof(response));
-        char stringa[50];
-        snprintf(stringa, sizeof(stringa), "%d", max_libri_prestati);
-        strcpy(response, stringa);
         memset(request, 0, sizeof(request));
     } else if(strncmp(request, "M_CARRELLO", 10) == 0) {
         memset(response, 0, sizeof(response));
@@ -763,7 +650,7 @@ int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
             copie = querySelectInt(conn, query_6);
 
             char query_8[2048];
-            sprintf(query_8, "UPDATE libro SET copie_disponibili = %d, copie_in_prestito = %d WHERE id_libro = '%d';", (copie = (copie > 0) ? (copie + 1) : copie), copie_in_prestito - 1, id_libro);
+            sprintf(query_8, "UPDATE libro SET copie_disponibili = %d, copie_in_prestito = %d WHERE id_libro = '%d';", copie + 1, copie_in_prestito - 1, id_libro);
             queryInsert(conn, query_8);
 
             char query_4[2048];
@@ -778,32 +665,26 @@ int processRequest(PGconn *conn, char *request, char *response, int newSocket) {
         }
         memset(request, 0, sizeof(request));
     } else {
-        // Gestisci altre tipologie di richieste qui
         strcpy(response, "Richiesta non eseguita correttamente");
     }
     return flag;
 }
 
-// Connessione al database
 void databaseConnection() {
     PGconn *conn = PQconnectdb("host=database port=5432 dbname=libreria user=postgres password=0000");
     
     if (PQstatus(conn) == CONNECTION_BAD) {
         fprintf(stderr, "Connessione al database fallita: %s\n", PQerrorMessage(conn));
         PQfinish(conn);
-        //exit(1);
     } else {
         printf("Connesso\n");
     }
 
-    // Verifica se le tabelle esistono già
     const char *checkTablesQuery = "SELECT table_name FROM information_schema.tables WHERE table_schema='public';";
     PGresult *checkTablesResult = PQexec(conn, checkTablesQuery);
     if (PQresultStatus(checkTablesResult) != PGRES_TUPLES_OK || PQntuples(checkTablesResult) == 0) {
-        // Le tabelle non esistono, creale
         printf("Le tabelle non esistono, creazione in corso...\n");
 
-        // Creazione tabelle e vista
         const char *createTablesQuery = "CREATE TYPE genere AS ENUM ('classico', 'fantasy', 'storico'); CREATE TABLE utente(id_utente SERIAL PRIMARY KEY, username VARCHAR(50) NOT NULL, password VARCHAR(50) NOT NULL); CREATE TABLE libro (id_libro SERIAL PRIMARY KEY, titolo VARCHAR(50) NOT NULL, autore VARCHAR(50) NOT NULL, genere GENERE NOT NULL, copie_disponibili INTEGER NOT NULL, copie_in_prestito INTEGER NOT NULL); CREATE TABLE prestiti (id_prestito SERIAL PRIMARY KEY, id_libro INTEGER, nome_utente VARCHAR(50), data_prestito DATE, data_restituzione DATE, FOREIGN KEY (id_libro) REFERENCES libro(id_libro)); CREATE TABLE carrello (nome_utente VARCHAR(50), id_libro INTEGER); CREATE VIEW magazzino AS SELECT titolo, autore, copie_disponibili FROM libro GROUP BY titolo, autore, copie_disponibili;";
         PGresult *createTablesResult = PQexec(conn, createTablesQuery);
 
@@ -815,7 +696,6 @@ void databaseConnection() {
         }
         PQclear(createTablesResult);
 
-        // Popolamento DB
         printf("Popolazione in corso...\n");
 
         const char *populateDBQuery = "INSERT INTO utente (username, password) VALUES ('Nome0', '0000'), ('Nome1', '1111'), ('Nome2', '2222'); INSERT INTO libro (titolo, autore, genere, copie_disponibili, copie_in_prestito) VALUES ('Libro1', 'Autore1', 'classico', 5, 0), ('Libro2', 'Autore1', 'classico', 2, 0), ('Libro3', 'Autore2', 'classico', 5, 0), ('Libro4', 'Autore2', 'classico', 3, 0), ('Libro5', 'Autore3', 'classico', 5, 0), ('Libro6', 'Autore4', 'classico', 4, 0), ('Libro7', 'Autore5', 'classico', 5, 0), ('Libro8', 'Autore5', 'classico', 5, 0), ('Libro9', 'Autore5', 'classico', 4, 0), ('Libro10', 'Autore6', 'classico', 6, 0), ('Libro11', 'Autore6', 'classico', 5, 0), ('Libro12', 'Autore6', 'classico', 1, 0), ('Libro13', 'Autore7', 'fantasy', 1, 0), ('Libro14', 'Autore8', 'fantasy', 7, 0), ('Libro15', 'Autore9', 'fantasy', 2, 0), ('Libro16', 'Autore9', 'fantasy', 2, 0), ('Libro17', 'Autore10', 'storico', 3, 0), ('Libro18', 'Autore10', 'storico', 5, 0), ('Libro19', 'Autore11', 'storico', 3, 0), ('Libro20', 'Autore11', 'storico', 5, 0);";
@@ -834,7 +714,7 @@ void databaseConnection() {
     char query_2[2048] = "SELECT COUNT(id_utente) as utenti_totali FROM utente";
     numUsers = querySelectInt(conn, query_2);
 
-    ///////////////////INIZIO SOCKET
+    // INIZIO SOCKET
     int serverSocket, newSocket;
     struct sockaddr_in serverAddr, clientAddr;
     socklen_t addrLen = sizeof(struct sockaddr_in);
@@ -869,32 +749,6 @@ void databaseConnection() {
     // Gestione di più client con l'uso di threads
     pthread_t threads[MAX_USERS];
 
-    // while (1) {
-    //     // Accetta la connessione da un client
-    //     newSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &addrLen);
-    //     if (newSocket == -1) {
-    //         perror("Errore nell'accettare la connessione");
-    //         exit(EXIT_FAILURE);
-    //     }
-    //     int flag = 0;
-    //     while(true){
-    //         memset(buffer, 0, sizeof(buffer));
-    //         // Ricevi la richiesta dal client
-    //         recv(newSocket, buffer, MAX_BUFFER_SIZE, 0);
-    //         printf("Ricevuta richiesta dal client: %s\n", buffer);
-
-    //         // Processa la richiesta e genera una risposta
-    //         char response[MAX_BUFFER_SIZE];
-    //         flag = processRequest(conn, buffer, response, newSocket);
-
-    //         // Invia la risposta al client
-    //         send(newSocket, response, strlen(response), 0);
-    //     }
-
-    //     // Chiudi la connessione con il client
-    //     close(newSocket);
-    // }
-
     while (1) {
         if ((newSocket = accept(serverSocket, (struct sockaddr *)&serverAddr, (socklen_t*)&addrLen)) < 0) {
             perror("Accept failed");
@@ -917,7 +771,7 @@ void databaseConnection() {
 
     // Chiudi il socket del server
     close(serverSocket);
-    ///////////////////TERMINE SOCKET
+    // TERMINE SOCKET
 
     PQfinish(conn);
 }
@@ -928,17 +782,14 @@ void *handle_client(void *arg) {
     char buffer[MAX_BUFFER_SIZE] = {0};
 
     if (strncmp(buffer, "LOGIN", 5) == 0) {
-        // Estrai username e password dalla richiesta
         sscanf(buffer, "LOGIN %s %s", username, password);
 
         if(login(conn, username, password)) {
-            // Leggi il nome utente dal client
             recv(new_socket, buffer, MAX_BUFFER_SIZE, 0);
             buffer[strcspn(buffer, "\r\n")] = 0;  // Rimuovi eventuali caratteri di nuova linea
             char username[50];
             strncpy(username, buffer, 50);
 
-            // Aggiungi il client alla lista
             int client_index = add_client(new_socket, username);
             if (client_index == -1) {
                 printf("Errore: troppi client connessi.\n");
@@ -948,35 +799,29 @@ void *handle_client(void *arg) {
             }
             printf("Utente %s connesso come client #%d.\n", username, client_index);
 
-            // Processa la richiesta e genera una risposta
             char response[MAX_BUFFER_SIZE];
             processRequest(conn, buffer, response, new_socket);
 
-            // Invia la risposta al client
             send(new_socket, response, strlen(response), 0);
         }        
     }
 
-    // Gestisci le richieste del client
     while (1) {
         memset(buffer, 0, sizeof(buffer));
-        // Ricevi la richiesta dal client
         ssize_t bytes_received = recv(new_socket, buffer, MAX_BUFFER_SIZE, 0);
         if (bytes_received <= 0) {
             printf("Client %s disconnesso.\n", username);
-            remove_client(new_socket);  // Rimuovi il client dalla lista
+            remove_client(new_socket);
             close(new_socket);
-            break;  // Esci dal ciclo se il client si disconnette
+            break;
         }
 
-        buffer[bytes_received] = '\0';  // Termina la stringa ricevuta
+        buffer[bytes_received] = '\0';
         printf("Ricevuta richiesta dal client %s: %s\n", username, buffer);
 
-        // Processa la richiesta e genera una risposta
         char response[MAX_BUFFER_SIZE];
         processRequest(conn, buffer, response, new_socket);
 
-        // Invia la risposta al client
         send(new_socket, response, strlen(response), 0);
     }
 

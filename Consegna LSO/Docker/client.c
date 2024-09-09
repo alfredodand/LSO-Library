@@ -81,7 +81,6 @@ int main() {
     int choice;
     int loginSuccess = 0;
     bool exitMenu = 0;
-    // do {
         //printf("\033[H\033[J"); // Pulisce lo schermo
         printf("\033[1;36mBenvenuto!\033[0m\n");
         printf("1. Login\n");
@@ -94,7 +93,6 @@ int main() {
         switch (choice) {
             case 1: {
                 do {
-                    // Ripulire le variabili per evitare valori residui
                     memset(username, 0, sizeof(username));
                     memset(password, 0, sizeof(password));
                     memset(buffer, 0, sizeof(buffer));
@@ -210,9 +208,6 @@ int main() {
                                 case 2:
                                     memset(buffer, 0, sizeof(buffer));
                                     memset(question, 0, sizeof(question));
-                                    sendRequest(clientSocket, "LIBRI_MAX");
-                                    receiveResponse(clientSocket, buffer);
-                                    max_libri_prestati = atoi(buffer);
 
                                     char prestito[200];
                                     char question[2000];
@@ -266,8 +261,6 @@ int main() {
                                     sprintf(question, "CHECKOUT %s", username);
                                     sendRequest(clientSocket, question);
                                     receiveResponse(clientSocket, buffer);
-
-                                    // memset(buffer, 0, sizeof(buffer));
                                     break;
                                 case 6:
                                     return 0;
@@ -404,7 +397,7 @@ int main() {
                                 case 5:
                                     break;
                             }
-                        } while(1);
+                        } while(choice_2 != 5);
                     } else if (strncmp(buffer, "LOGIN_FAIL", 10) == 0) {
                         memset(buffer, 0, sizeof(buffer));
                         printf("\nLogin non effettuato correttamente. Riprova.\n");
@@ -431,8 +424,6 @@ int main() {
             default:
                 printf("\033[1;31mScelta non valida. Riprova.\033[0m\n");
         }
-    //     sleep(1); // Aggiorna la data ogni secondo
-    // } while (!loginSuccess);
 
     close(clientSocket);
 
