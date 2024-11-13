@@ -1,50 +1,3 @@
-# version: '3.3'
-
-# services:
-#   server:
-#     image: server
-#     container_name: server_container
-#     environment:
-#       - SERVER_PORT=8080
-#       - POSTGRES_USER=postgres
-#       - POSTGRES_PASSWORD=0000
-#       - POSTGRES_DB=libreria
-#       - POSTGRES_PORT=5432
-#       - POSTGRES_HOST=database
-#     volumes:
-#       - './server:/cfiles'
-#     working_dir: '/cfiles'
-#     depends_on:
-#       - database
-#     ports:
-#       - "8080:8080"
-#     networks:
-#       - my_network
-
-#   database:
-#     image: postgres:13
-#     container_name: postgres_containerù
-#     environment:
-#       - POSTGRES_USER=postgres
-#       - POSTGRES_PASSWORD=0000
-#       - POSTGRES_DB=libreria
-#     ports:
-#       - "5432:5432"
-#     command: ['postgres', '-p', '5432']
-#     volumes: #./cartella/locale:/cartella/container[:ro]
-#       - ./postgres-data:/var/lib/postgresql/data
-#       - ./SQL/NewDb.sql:/docker-entrypoint-initdb.d:ro
-#     networks:
-#       - my_network
-
-# volumes:
-#   postgres-data:
-      
-# networks:
-#   my_network:
-#     driver: bridge
-
-
 version: '3'
 
 services:
@@ -59,7 +12,7 @@ services:
       POSTGRES_PASSWORD: 0000
       POSTGRES_DB: libreria
     ports:
-      - "5433:5432"
+      - "5432:5432"
     # command: ['postgres', '-p', '5432']
     networks:
       - backend
@@ -69,10 +22,6 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: server
-    # environment:
-    #   POSTGRES_USER: postgres
-    #   POSTGRES_PASSWORD: 0000
-    #   POSTGRES_DB: libreria
     ports:
       - "8080:8080"
     depends_on:
